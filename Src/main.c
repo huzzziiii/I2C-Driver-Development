@@ -22,31 +22,7 @@
 #include "main.h"
 #include "stm32f4xx_hal_i2c.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
+#define MCP9808_ADDR	0x18
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -66,7 +42,7 @@ void I2C_Initilization()
 	I2C1_handle.pI2Cx = I2C1;
 	I2C1_handle.I2C_Config.I2C_AckControl = I2C_ACK_ENABLE;
 	I2C1_handle.I2C_Config.I2C_SCLSpeed = I2C_SCL_SPEED_SM;
-	I2C1_handle.I2C_Config.I2C_DeviceAddress = 0x18;
+	I2C1_handle.I2C_Config.I2C_DeviceAddress = MCP9808_ADDR;
 	I2C1_handle.I2C_Config.I2C_FMDutyCycle = I2C_FM_DUTY_2;
 	I2C_Init(&I2C1_handle);
 
@@ -152,6 +128,9 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
+  /* GPIO I2C Clock Enable */
+  __HAL_RCC_I2C1_CLK_ENABLE();
+
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 
@@ -170,7 +149,7 @@ static void MX_GPIO_Init(void)
 
   /* Configure I2C */
   GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
 

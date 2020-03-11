@@ -22,7 +22,7 @@
 #include "main.h"
 #include "stm32f4xx_hal_i2c.h"
 
-#define MCP9808_ADDR	0x18
+//#define MCP9808_ADDR	0x18		// todo
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -36,7 +36,7 @@ static void MX_GPIO_Init(void);
 
 /* USER CODE END 0 */
 
-void I2C_Initilization()
+I2C_Handle_t I2C_Initilization()
 {
 	I2C_Handle_t I2C1_handle;
 	I2C1_handle.pI2Cx = I2C1;
@@ -46,7 +46,36 @@ void I2C_Initilization()
 	I2C1_handle.I2C_Config.I2C_FMDutyCycle = I2C_FM_DUTY_2;
 	I2C_Init(&I2C1_handle);
 
-	I2C_MasterSendData(&I2C1_handle);
+	return I2C1_handle;
+//	I2C_MasterSendData(&I2C1_handle);
+
+//	uint8_t data[3] = {1,0,1};
+//	uint8_t rxBuffer[3] = {0};
+//
+//	uint8_t size = sizeof(data)/sizeof(data[0]);
+//	uint8_t readBytes = 2;	 // get size of rxBuffer (todo)
+//
+////	HAL_StatusTypeDef I2C_transmitStatus = I2C_MasterTransmitData (&I2C1_handle, data, size);
+//
+//	I2C_MasterReceiveData (&I2C1_handle, rxBuffer, readBytes);
+}
+
+void ReadTemperature(I2C_Handle_t I2C1_handle) {
+
+	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
+	uint8_t rxBuffer[2] = {0};
+
+	uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
+	uint8_t readBytes = sizeof(rxBuffer)/sizeof(rxBuffer[0]);
+
+	// specify the register address where temperature values will be read from
+	I2C_MasterRequestWrite(&I2C1_handle, txBuffer, txSize);
+
+	// request the data from the sensor
+	I2C_MasterReceiveData (&I2C1_handle, rxBuffer, readBytes);
+
+	// todo : process data
+
 
 }
 
@@ -58,19 +87,17 @@ int main(void)
 {
 	HAL_Init();
 
-	I2C_Handle_t I2C1_handle;
-	I2C1_handle.pI2Cx = I2C1;
-
-//	I2C_Init(&I2C1_handle);
-
   /* Configure the system clock */
 	SystemClock_Config();
-
 
   /* Initialize all configured peripherals */
 	MX_GPIO_Init();
 
-	I2C_Initilization();
+	I2C_Handle_t I2C_Init = I2C_Initilization();
+
+	for (int i = 0; i < 2; i++) {
+		ReadTemperature(I2C_Init);
+	}
 
 	while (1);
 
@@ -129,10 +156,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /* GPIO I2C Clock Enable */
-  __HAL_RCC_I2C1_CLK_ENABLE();
+//  __HAL_RCC_I2C1_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PC13 */
   GPIO_InitStruct.Pin = GPIO_PIN_13;
@@ -141,7 +168,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_5;
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

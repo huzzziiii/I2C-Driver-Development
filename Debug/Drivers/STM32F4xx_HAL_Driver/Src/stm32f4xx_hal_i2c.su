@@ -1,7 +1,12 @@
-stm32f4xx_hal_i2c.c:12:6:I2C_PeripheralClkControl	16	static
-stm32f4xx_hal_i2c.c:27:6:I2C_Init	24	static
+stm32f4xx_hal_i2c.c:13:6:I2C_PeripheralClkControl	16	static
+stm32f4xx_hal_i2c.c:29:6:I2C_Init	24	static
 stm32f4xx_hal_i2c.c:60:9:GetFlagStatus	16	static
 stm32f4xx_hal_i2c.c:66:6:GenerateStartCondition	16	static
-stm32f4xx_hal_i2c.c:70:13:I2C_WriteSlaveAddress	24	static
-stm32f4xx_hal_i2c.c:77:13:I2C_ClearADDRFlag	24	static
-stm32f4xx_hal_i2c.c:85:6:I2C_MasterSendData	16	static
+stm32f4xx_hal_i2c.c:70:13:GenerateStopCondition	16	static
+stm32f4xx_hal_i2c.c:74:13:I2C_WriteSlaveAddress	24	static
+stm32f4xx_hal_i2c.c:83:13:I2C_ClearADDRFlag	24	static
+stm32f4xx_hal_i2c.c:88:13:I2C_ControlAcking	16	static
+stm32f4xx_hal_i2c.c:100:19:I2C_MasterRequestWrite	24	static
+stm32f4xx_hal_i2c.c:153:19:I2C_MasterTransmitData	24	static
+stm32f4xx_hal_i2c.c:164:6:I2C_MasterReceiveData	24	static
+stm32f4xx_hal_i2c.c:289:6:I2C_MasterSendData	16	static

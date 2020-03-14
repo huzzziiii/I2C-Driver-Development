@@ -20,21 +20,16 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stm32f4xx_hal_i2c.h"
+//#include "stm32f4xx_hal_i2c.h"
+#include "i2c.h"
 
 //#define MCP9808_ADDR	0x18		// todo
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-/* USER CODE BEGIN PFP */
+extern void initialise_monitor_handles(void);
 
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 I2C_Handle_t I2C_Initilization()
 {
@@ -47,37 +42,44 @@ I2C_Handle_t I2C_Initilization()
 	I2C_Init(&I2C1_handle);
 
 	return I2C1_handle;
-//	I2C_MasterSendData(&I2C1_handle);
-
-//	uint8_t data[3] = {1,0,1};
-//	uint8_t rxBuffer[3] = {0};
-//
-//	uint8_t size = sizeof(data)/sizeof(data[0]);
-//	uint8_t readBytes = 2;	 // get size of rxBuffer (todo)
-//
-////	HAL_StatusTypeDef I2C_transmitStatus = I2C_MasterTransmitData (&I2C1_handle, data, size);
-//
-//	I2C_MasterReceiveData (&I2C1_handle, rxBuffer, readBytes);
 }
 
-void ReadTemperature(I2C_Handle_t I2C1_handle) {
-
-	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
-	uint8_t rxBuffer[2] = {0};
-
-	uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
-	uint8_t readBytes = sizeof(rxBuffer)/sizeof(rxBuffer[0]);
-
-	// specify the register address where temperature values will be read from
-	I2C_MasterRequestWrite(&I2C1_handle, txBuffer, txSize);
-
-	// request the data from the sensor
-	I2C_MasterReceiveData (&I2C1_handle, rxBuffer, readBytes);
-
-	// todo : process data
-
-
-}
+//void ReadTemperature(I2C_Handle_t I2C1_handle) {
+//
+//	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
+//	uint8_t rxBuffer[2] = {0};
+//	uint16_t temperature = 0;
+//
+//	uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
+//	uint8_t readBytes = sizeof(rxBuffer)/sizeof(rxBuffer[0]);
+//
+//	// specify the register address where temperature values will be read from
+//	I2C_MasterRequestWrite(&I2C1_handle, txBuffer, txSize);
+//
+//	// request the data from the sensor
+//	HAL_I2C_Master_Receive (&I2C1_handle, rxBuffer, readBytes);
+//
+//	// printing raw bytes
+//	for (int i = 0; i < readBytes; i++) {
+//		printf ("%d\n", rxBuffer[i]);
+//	}
+//
+//	// process data
+//	uint8_t upperByte = rxBuffer[0] & 0x1F; // mask out the 3 bits
+//	uint8_t signBit = upperByte & 0x10;
+//
+//	if (signBit)
+//	{
+//		upperByte = upperByte & 0xF; 	// clear out the sign bit
+//		temperature = 256 - (upperByte << 4 | rxBuffer[1] >> 4);
+//	}
+//	else
+//	{
+//		temperature = upperByte << 4 | rxBuffer[1] >> 4;
+//	}
+//
+//	printf ("Temperature value: %d\n", temperature);
+//}
 
 /**
   * @brief  The application entry point.
@@ -85,6 +87,9 @@ void ReadTemperature(I2C_Handle_t I2C1_handle) {
   */
 int main(void)
 {
+	initialise_monitor_handles();
+	printf ("Application is running....\n");
+
 	HAL_Init();
 
   /* Configure the system clock */
@@ -95,12 +100,8 @@ int main(void)
 
 	I2C_Handle_t I2C_Init = I2C_Initilization();
 
-	for (int i = 0; i < 2; i++) {
-		ReadTemperature(I2C_Init);
-	}
-
-	while (1);
-
+	// read temperature from the sensor
+	ReadTemperature(&I2C_Init);
 }
 
 /**
@@ -168,7 +169,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA5 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Pin = GPIO_PIN_5;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

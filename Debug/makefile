@@ -53,7 +53,7 @@ all: hal_i2c_drivers.elf secondary-outputs
 
 # Tool invocations
 hal_i2c_drivers.elf: $(OBJS) $(USER_OBJS) /Users/huzaifaasif/STM32CubeIDE/workspace_1.0.2/hal_i2c_drivers/STM32F401RETX_FLASH.ld
-	arm-none-eabi-g++ -o "hal_i2c_drivers.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/huzaifaasif/STM32CubeIDE/workspace_1.0.2/hal_i2c_drivers/STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="hal_i2c_drivers.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
+	arm-none-eabi-g++ -o "hal_i2c_drivers.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/Users/huzaifaasif/STM32CubeIDE/workspace_1.0.2/hal_i2c_drivers/STM32F401RETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="hal_i2c_drivers.map" -Wl,--gc-sections -static -specs=rdimon.specs -lc -lrdimon --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -lstdc++ -lsupc++ -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

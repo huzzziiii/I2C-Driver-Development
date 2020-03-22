@@ -20,10 +20,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-//#include "stm32f4xx_hal_i2c.h"
 #include "i2c.h"
 
-//#define MCP9808_ADDR	0x18		// todo
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -44,43 +42,6 @@ I2C_Handle_t I2C_Initilization()
 	return I2C1_handle;
 }
 
-//void ReadTemperature(I2C_Handle_t I2C1_handle) {
-//
-//	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
-//	uint8_t rxBuffer[2] = {0};
-//	uint16_t temperature = 0;
-//
-//	uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
-//	uint8_t readBytes = sizeof(rxBuffer)/sizeof(rxBuffer[0]);
-//
-//	// specify the register address where temperature values will be read from
-//	I2C_MasterRequestWrite(&I2C1_handle, txBuffer, txSize);
-//
-//	// request the data from the sensor
-//	HAL_I2C_Master_Receive (&I2C1_handle, rxBuffer, readBytes);
-//
-//	// printing raw bytes
-//	for (int i = 0; i < readBytes; i++) {
-//		printf ("%d\n", rxBuffer[i]);
-//	}
-//
-//	// process data
-//	uint8_t upperByte = rxBuffer[0] & 0x1F; // mask out the 3 bits
-//	uint8_t signBit = upperByte & 0x10;
-//
-//	if (signBit)
-//	{
-//		upperByte = upperByte & 0xF; 	// clear out the sign bit
-//		temperature = 256 - (upperByte << 4 | rxBuffer[1] >> 4);
-//	}
-//	else
-//	{
-//		temperature = upperByte << 4 | rxBuffer[1] >> 4;
-//	}
-//
-//	printf ("Temperature value: %d\n", temperature);
-//}
-
 /**
   * @brief  The application entry point.
   * @retval int
@@ -88,7 +49,8 @@ I2C_Handle_t I2C_Initilization()
 int main(void)
 {
 	initialise_monitor_handles();
-	printf ("Application is running....\n");
+	const uint8_t bytesToRead = 6;
+	printf ("Application is running...\n");
 
 	HAL_Init();
 
@@ -101,7 +63,7 @@ int main(void)
 	I2C_Handle_t I2C_Init = I2C_Initilization();
 
 	// read temperature from the sensor
-	ReadTemperature(&I2C_Init);
+	ReadTemperature(&I2C_Init, bytesToRead);
 }
 
 /**

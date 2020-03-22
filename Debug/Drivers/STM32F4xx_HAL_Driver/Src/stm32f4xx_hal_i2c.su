@@ -4,8 +4,9 @@ stm32f4xx_hal_i2c.c:59:9:GetFlagStatus	16	static
 stm32f4xx_hal_i2c.c:65:6:GenerateStartCondition	16	static
 stm32f4xx_hal_i2c.c:69:13:GenerateStopCondition	16	static
 stm32f4xx_hal_i2c.c:73:13:I2C_WriteSlaveAddress	24	static
-stm32f4xx_hal_i2c.c:82:13:I2C_ClearADDRFlag	24	static
-stm32f4xx_hal_i2c.c:87:13:I2C_ControlAcking	16	static
-stm32f4xx_hal_i2c.c:99:19:HAL_I2C_Master_Transmit	24	static
-stm32f4xx_hal_i2c.c:151:6:HAL_I2C_Master_Receive	24	static
-stm32f4xx_hal_i2c.c:256:26:WaitTillTimeout	24	static
+stm32f4xx_hal_i2c.c:81:13:I2C_WriteToDevice	16	static
+stm32f4xx_hal_i2c.c:88:13:I2C_ClearADDRFlag	24	static
+stm32f4xx_hal_i2c.c:93:13:I2C_ControlAcking	16	static
+stm32f4xx_hal_i2c.c:105:19:HAL_I2C_Master_Transmit	24	static
+stm32f4xx_hal_i2c.c:152:6:HAL_I2C_Master_Receive	24	static
+stm32f4xx_hal_i2c.c:265:26:WaitTillTimeout	24	static

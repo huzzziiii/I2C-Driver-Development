@@ -1,1 +1,2 @@
-i2c.c:4:6:ReadTemperature	40	static
+i2c.c:4:5:ProcessData	24	static
+i2c.c:24:6:ReadTemperature	56	dynamic

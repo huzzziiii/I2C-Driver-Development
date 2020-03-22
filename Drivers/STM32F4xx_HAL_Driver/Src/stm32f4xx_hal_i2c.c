@@ -78,6 +78,12 @@ static void I2C_WriteSlaveAddress(I2C_Handle_t *I2C_handle, uint8_t operation) {
 	I2C_handle->pI2Cx->DR = slaveAddress;
 }
 
+static void I2C_WriteToDevice(I2C_Handle_t *I2C_handle, uint8_t data, uint8_t operation) {
+	data <<= 1;
+	data = operation == WRITE ? (data & ~1) : (data | 1);
+	I2C_handle->pI2Cx->DR = data;
+}
+
 // read SR1 and SR2 registers to clear ADDR flag
 static void I2C_ClearADDRFlag(I2C_TypeDef *pI2Cx) {
 	uint32_t dummyRead;
@@ -113,10 +119,10 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *da
 	// clear address flag
 	I2C_ClearADDRFlag(I2C_handle->pI2Cx);
 
-	/* write to the SDA lie */
+	/* write to the SDA line */
 
 	// wait for TXE bit to set
-	while(!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_TXE) && WaitTillTimeout(5));
+//	while(!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_TXE) && WaitTillTimeout(5)); // todo remove!
 
 	for (; size > 0; size--)
 	{
@@ -138,17 +144,12 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *da
 //		}
 	}
 
-
-	while(! GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_TXE) );
-
-	while(! GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_BTF) );
-
 	GenerateStopCondition(I2C_handle);
 
 	return HAL_OK;
 }
 
-void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_t size)
+void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_t size, uint8_t startIndex)
 {
 	// generate start condition
 	GenerateStartCondition(I2C_handle);
@@ -190,7 +191,7 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 					// clear the ADDR flag
 					I2C_ClearADDRFlag(I2C_handle->pI2Cx);
 
-					// wait till RXNE = 1
+					// wait till RXNE = 1 (Data is sent from SR to DR)
 					while (!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_RXNE));
 
 					// generate stop
@@ -202,14 +203,20 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 			}
 
 			else if (size == 2) {
+				// wait till BTF is set (last byte is received) - shift reg=1, DR=1
+				while(!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_BTF) && WaitTillTimeout(5));
 
-				while(!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_BTF) && WaitTillTimeout(50));
 				GenerateStopCondition(I2C_handle);
-				*rxBuffer = (uint8_t) I2C_handle->pI2Cx->DR;
-				rxBuffer++;
-				*rxBuffer = (uint8_t) I2C_handle->pI2Cx->DR;
+				printf ("Start_index: %d\n", startIndex);
+
+				rxBuffer[startIndex++] = (uint8_t) I2C_handle->pI2Cx->DR;
+				--size;
+
+				rxBuffer[startIndex] = (uint8_t) I2C_handle->pI2Cx->DR;
+				--size;
 			}
 			else if (size == 3) {
+				// wait for the second last byte to be put in SR while DR is full (RxNE=1)
 				while (!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_BTF) && WaitTillTimeout(5));
 
 				// disable ACK so NACK is sent upon reception of the last byte
@@ -221,7 +228,9 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 
 				size--;
 
+				// wait for the last byte to be put in SR while DR is full (RxNE=1)
 				while (!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_BTF) && WaitTillTimeout(5));
+
 				GenerateStopCondition(I2C_handle);
 
 				// read the second byte

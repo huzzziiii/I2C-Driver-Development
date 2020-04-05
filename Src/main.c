@@ -21,25 +21,52 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "i2c.h"
-
+//
+static uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
+static const uint8_t bytesToRead = 6;
+static uint8_t rxBuffer[2];
+static uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 extern void initialise_monitor_handles(void);
 
+I2C_Handle_t I2C1_handle;
 
-I2C_Handle_t I2C_Initilization()
+void I2C_Initilization()
 {
-	I2C_Handle_t I2C1_handle;
+//	I2C_Handle_t I2C1_handle;
 	I2C1_handle.pI2Cx = I2C1;
 	I2C1_handle.I2C_Config.I2C_AckControl = I2C_ACK_ENABLE;
 	I2C1_handle.I2C_Config.I2C_SCLSpeed = I2C_SCL_SPEED_SM;
 	I2C1_handle.I2C_Config.I2C_DeviceAddress = MCP9808_ADDR;
 	I2C1_handle.I2C_Config.I2C_FMDutyCycle = I2C_FM_DUTY_2;
 	I2C_Init(&I2C1_handle);
+}
 
-	return I2C1_handle;
+void GetTemperature(uint8_t interrupt)
+{
+//	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
+//	uint8_t rxBuffer[bytesToRead];
+//	uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
+	printf ("Reading %d bytes\n", bytesToRead);
+
+	I2C1_handle.txBuffer = txBuffer;
+	I2C1_handle.txBufferLength = txSize;
+	I2C1_handle.pRxBuffer = rxBuffer;
+	I2C1_handle.rxStartIndex = 0;
+	I2C1_handle.rxBufferLength = BYTES_PER_TRANSACTION;		// todo - maybe remove rxBufferSize
+	I2C1_handle.rxBufferSize = bytesToRead;
+
+	if (interrupt == SET)
+	{
+		ReadTemperatureInterrupt(&I2C1_handle, bytesToRead);
+	}
+	else
+	{
+		ReadTemperature(&I2C1_handle, bytesToRead);
+	}
 }
 
 /**
@@ -49,7 +76,6 @@ I2C_Handle_t I2C_Initilization()
 int main(void)
 {
 	initialise_monitor_handles();
-	const uint8_t bytesToRead = 6;
 	printf ("Application is running...\n");
 
 	HAL_Init();
@@ -60,11 +86,23 @@ int main(void)
   /* Initialize all configured peripherals */
 	MX_GPIO_Init();
 
-	I2C_Handle_t I2C_Init = I2C_Initilization();
+    I2C_Initilization();
 
 	// read temperature from the sensor
-	ReadTemperature(&I2C_Init, bytesToRead);
+	GetTemperature(SET);
+//				GetTemperature(RESET);
+
+
+//	ReadTemperature(&I2C1_handle, bytesToRead);
+
+	while (1);
+
 }
+
+//void I2C1_EV_IRQHandler (void)
+//{
+//	I2C_EV_IRQHandling(&I2C1_handle);
+//}
 
 /**
   * @brief System Clock Configuration
@@ -151,15 +189,15 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_7;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  /* EXTI GPIO init */
+//  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+//  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
+  /* EXTI I2C Interrupts */
+  HAL_NVIC_EnableIRQ(I2C1_EV_IRQn);
+  HAL_NVIC_EnableIRQ(I2C1_ER_IRQn);
 }
 
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
 
 /**
   * @brief  This function is executed in case of error occurrence.

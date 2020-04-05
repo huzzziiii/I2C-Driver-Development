@@ -2,28 +2,60 @@
  * stm32f4xx_hal_i2c.h
  */
 #include "stm32f401xe.h"
-
 #include "stm32f4xx_hal.h"
+
+/*
+ * @ I2C states for interrupt
+ */
+typedef enum {
+	I2C_READY,
+	I2C_RX_BUSY,
+	I2C_TX_BUSY,
+	I2C_ERROR
+} I2C_State;
+
+typedef enum {
+	I2C_ERROR_AF,
+	I2C_TX_DONE,
+	I2C_RX_DONE
+} I2C_ErrorEvents;
+
+
 typedef struct {
 	uint32_t I2C_SCLSpeed;
 	uint8_t I2C_DeviceAddress;
 	uint8_t I2C_AckControl;
 	uint16_t I2C_FMDutyCycle;
-
 } I2C_Config_t;
 
 typedef struct {
 	I2C_TypeDef *pI2Cx;
 	I2C_Config_t I2C_Config;
-
+	I2C_State I2C_State;
+	uint8_t *txBuffer;
+	uint8_t *pRxBuffer;
+	uint8_t rxStartIndex;
+	uint8_t rxBufferSize;
+	uint8_t txBufferLength;
+	uint8_t rxBufferLength;
 }I2C_Handle_t;
 
+HAL_StatusTypeDef WaitTillTimeout (uint8_t timeout);
 void I2C_PeripheralClkControl(I2C_TypeDef *pI2Cx);
 void I2C_Init(I2C_Handle_t *I2C_handle);
-void GenerateStartCondition(I2C_Handle_t *I2C_handle);
+//void GenerateStartCondition(I2C_Handle_t *I2C_handle);
 void I2C_MasterSendData(I2C_Handle_t *I2C_handle);
 HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *data, uint8_t size);
 void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_t size, uint8_t startIndex);
+
+// I2C interrupt headers
+I2C_State HAL_MasterTransmitInterrupt();
+I2C_State HAL_MasterReceiveInterrupt();
+void I2C_TXE_Interrupt();
+void I2C_RXNE_Interrupt();
+void StopTransmission ();
+
+
 
 /*
  * @I2C_SCLSpeed

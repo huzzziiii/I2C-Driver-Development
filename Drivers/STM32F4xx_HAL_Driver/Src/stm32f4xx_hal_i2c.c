@@ -116,8 +116,7 @@ I2C_State HAL_MasterTransmitInterrupt()
 
 	if (i2cState != I2C_TX_BUSY && i2cState != I2C_RX_BUSY)
 	{
-//		printf ("TXing...\n");
-//		I2C_handle_p = I2C_handle;
+		printf ("TXing...\n");
 
 		I2C_handle_p->I2C_State = I2C_TX_BUSY;		// set i2c transaction state
 
@@ -135,7 +134,7 @@ I2C_State HAL_MasterReceiveInterrupt()
 
 	if (i2cState != I2C_RX_BUSY && i2cState != I2C_TX_BUSY)
 	{
-//		printf ("RXing...\n");
+		printf ("RXing...\n");
 		I2C_handle_p->I2C_State = I2C_RX_BUSY;
 
 		GenerateStartCondition(I2C_handle_p);
@@ -251,6 +250,16 @@ void I2C1_EV_IRQHandler (void)
 		temp = (I2C_handle_p->pI2Cx->SR1 & I2C_SR1_ADDR) >> I2C_SR1_ADDR_Pos;
 		if (temp)
 		{
+			// RX
+			if (I2C_handle_p->I2C_State == I2C_RX_BUSY)
+			{
+				if (I2C_handle_p->rxBufferLength == 2)
+				{
+					I2C_ControlAcking(I2C_handle_p->pI2Cx, RESET);
+					I2C_handle_p->pI2Cx->CR1 |= 1 << I2C_CR1_POS_Pos;
+				}
+			}
+
 			I2C_ClearADDRFlag(I2C_handle_p->pI2Cx);				// clear address flag
 		}
 
@@ -270,7 +279,7 @@ void I2C1_EV_IRQHandler (void)
 
 			if (temp && I2C_handle_p->I2C_State == I2C_RX_BUSY)
 			{
-				I2C_RXNE_Interrupt();
+//				I2C_RXNE_Interrupt();
 			}
 		}
 
@@ -288,24 +297,23 @@ void I2C1_EV_IRQHandler (void)
 			}
 			else if (I2C_handle_p->I2C_State == I2C_RX_BUSY)			// RXNE=1, BTF=1, LEN=0 --> STOP
 			{
-//				if (I2C_handle_p->rxBufferLength == 2)
-//				{
-//					GenerateStopCondition(I2C_handle_p);
-//
-//					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
-//					I2C_handle_p->rxBufferLength--;
-//
-//					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
-//					I2C_handle_p->rxBufferLength--;
-//
-//					I2C_StopTransmission();
-//
-//				}
-				if (!I2C_handle_p->rxBufferLength)						// no more bytes to read
+				if (I2C_handle_p->rxBufferLength == 2)
 				{
 					GenerateStopCondition(I2C_handle_p);
+
+					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
+					I2C_handle_p->rxBufferLength--;
+
+					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
+					I2C_handle_p->rxBufferLength--;
+
 					I2C_StopTransmission();
 				}
+//				if (!I2C_handle_p->rxBufferLength)						// no more bytes to read
+//				{
+//					GenerateStopCondition(I2C_handle_p);
+//					I2C_StopTransmission();
+//				}
 			}
 		}
 
@@ -564,7 +572,7 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 
 static void I2C_StopTransmission()
 {
-//	printf ("Stopping transmission...\n\n");
+	printf ("Stopping transmission...\n\n");
 
 	// disable control bits
 	I2C_handle_p->pI2Cx->CR2 &= ~(1 << I2C_CR2_ITEVTEN_Pos);

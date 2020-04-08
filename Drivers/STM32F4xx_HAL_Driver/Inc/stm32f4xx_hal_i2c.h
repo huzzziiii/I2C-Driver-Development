@@ -8,6 +8,7 @@
  * @ I2C states for interrupt
  */
 typedef enum {
+	I2C_INIT,
 	I2C_READY,
 	I2C_RX_BUSY,
 	I2C_TX_BUSY,
@@ -16,6 +17,10 @@ typedef enum {
 
 typedef enum {
 	I2C_ERROR_AF,
+	I2C_ERROR_OVR,
+	I2C_ERROR_PECERR,
+	I2C_ERROR_TIMEOUT,
+	I2C_ERROR_BERR,
 	I2C_TX_DONE,
 	I2C_RX_DONE
 } I2C_ErrorEvents;
@@ -49,11 +54,12 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *da
 void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_t size, uint8_t startIndex);
 
 // I2C interrupt headers
-I2C_State HAL_MasterTransmitInterrupt();
-I2C_State HAL_MasterReceiveInterrupt();
-void I2C_TXE_Interrupt();
-void I2C_RXNE_Interrupt();
-void StopTransmission ();
+I2C_State HAL_MasterTransmitInterrupt(void);
+I2C_State HAL_MasterReceiveInterrupt(void);
+I2C_State HAL_I2C_StartInterrupt(I2C_State expectedState);
+void I2C_TXE_Interrupt(void);
+void I2C_RXNE_Interrupt(void);
+void StopTransmission (void);
 
 
 

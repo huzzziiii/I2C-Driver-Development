@@ -1,7 +1,10 @@
 
 #include <i2c.h>
 
-int ProcessData (uint8_t *rxBuffer, uint8_t startIndex) {
+/*
+ * @ProcessData: Convert raw bytes into readable data
+ */
+void ProcessData (uint8_t *rxBuffer, uint8_t startIndex) {
 	printf ("\nUpper byte: %d, Lower byte: %d\n", rxBuffer[startIndex], rxBuffer[startIndex+1]);
 	uint16_t temperature;
 
@@ -21,30 +24,38 @@ int ProcessData (uint8_t *rxBuffer, uint8_t startIndex) {
 	printf ("Temperature value: %d\n\n", temperature);
 }
 
-
-void ReadTemperatureInterrupt(I2C_Handle_t *I2C_handle, const uint8_t bytesToRead) // todo: rmv bytesToRead
+/*
+ * @ReadTemperatureInterrupt: Read temperature values via I2C using interrupts
+ */
+void ReadTemperatureInterrupt(I2C_Handle_t *I2C_handle)
 {
 	setRef(I2C_handle);   // todo
-	while (HAL_MasterTransmitInterrupt() != I2C_READY);
 
-	while (HAL_MasterReceiveInterrupt() != I2C_READY);
+	// Start I2C transaction
+	while (HAL_I2C_StartInterrupt(I2C_TX_BUSY) != I2C_READY);
+
+	I2C_handle->I2C_State = I2C_INIT;
+
+	// request the data from the sensor
+	for (int i = 0; i < I2C_handle->rxBufferSize/2; i++)
+	{
+		I2C_handle->I2C_State = I2C_INIT;
+		while (HAL_I2C_StartInterrupt(I2C_RX_BUSY) != I2C_READY);
+	}
+
+	printf ("Printing processed data...\n");
+	for (int i = 0; i < I2C_handle->rxBufferSize; i+=2)
+	{
+		printf ("%d, %d\n", I2C_handle->pRxBuffer[i], I2C_handle->pRxBuffer[i+1]);
+		ProcessData(I2C_handle->pRxBuffer, i);
+	}
 
    	while (1);
-
-//	HAL_MasterReceiveInterrupt(I2C_handle);
-//
-//
-//	if (I2C_handle->I2C_State == I2C_READY)
-//	{
-//		// print only when data has been read
-//		printf ("Printing raw bytes:\n");
-//		for (int i = 0; i < bytesToRead; i+=2) {
-//			printf ("%d,%d\n", I2C_handle->pRxBuffer[i], I2C_handle->pRxBuffer[i+1]);
-//			ProcessData(I2C_handle->pRxBuffer, i);
-//		}
-//	}
 }
 
+/*
+ * @ReadTemperature: Read temperature via I2C using polling approach
+ */
 void ReadTemperature(I2C_Handle_t *I2C_handle, const uint8_t bytesToRead)
 {
 	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};

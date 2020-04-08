@@ -23,8 +23,9 @@
 #include "i2c.h"
 //
 static uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
-static const uint8_t bytesToRead = 6;
-static uint8_t rxBuffer[2];
+//static const uint8_t bytesToRead = 4;
+#define bytesToRead 6
+static uint8_t rxBuffer[bytesToRead];
 static uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
 
 /* Private function prototypes -----------------------------------------------*/
@@ -47,9 +48,6 @@ void I2C_Initilization()
 
 void GetTemperature(uint8_t interrupt)
 {
-//	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
-//	uint8_t rxBuffer[bytesToRead];
-//	uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
 	printf ("Reading %d bytes\n", bytesToRead);
 
 	I2C1_handle.txBuffer = txBuffer;
@@ -61,7 +59,7 @@ void GetTemperature(uint8_t interrupt)
 
 	if (interrupt == SET)
 	{
-		ReadTemperatureInterrupt(&I2C1_handle, bytesToRead);
+		ReadTemperatureInterrupt(&I2C1_handle);
 	}
 	else
 	{
@@ -86,14 +84,13 @@ int main(void)
   /* Initialize all configured peripherals */
 	MX_GPIO_Init();
 
+  /* Initialize I2C struct */
     I2C_Initilization();
 
-	// read temperature from the sensor
+	/* read temperature from the sensor */
 	GetTemperature(SET);
-//				GetTemperature(RESET);
+//	GetTemperature(RESET);
 
-
-//	ReadTemperature(&I2C1_handle, bytesToRead);
 
 	while (1);
 

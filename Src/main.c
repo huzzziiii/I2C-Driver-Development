@@ -4,15 +4,6 @@
   * @file           : main.c
   * @brief          : Main program body
   ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2019 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
   *
   ******************************************************************************
   */
@@ -35,6 +26,9 @@ extern void initialise_monitor_handles(void);
 
 I2C_Handle_t I2C1_handle;
 
+/*
+ * Initializing user-defined variables for I2C struct
+ */
 void I2C_Initilization()
 {
 //	I2C_Handle_t I2C1_handle;
@@ -88,18 +82,13 @@ int main(void)
     I2C_Initilization();
 
 	/* read temperature from the sensor */
-	GetTemperature(SET);
-//	GetTemperature(RESET);
+	GetTemperature(SET);			// interrupt
+//	GetTemperature(RESET);			// polling approach
 
 
 	while (1);
 
 }
-
-//void I2C1_EV_IRQHandler (void)
-//{
-//	I2C_EV_IRQHandling(&I2C1_handle);
-//}
 
 /**
   * @brief System Clock Configuration

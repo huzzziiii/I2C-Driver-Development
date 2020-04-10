@@ -1,21 +1,22 @@
 /*
  * stm32f4xx_hal_i2c.c
  */
-////#include "stm32f4xx_hal_i2c.h"
-//#include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_i2c.h"
 
-// static functions' declarations
+/* Private function prototypes -----------------------------------------------*/
 static void I2C_ClearADDRFlag(I2C_TypeDef *pI2Cx);
 static void I2C_WriteSlaveAddress(volatile I2C_Handle_t *I2C_handle, uint8_t operation);
 static void I2C_ControlAcking(I2C_TypeDef *pI2Cx, uint8_t enable);
 //static HAL_StatusTypeDef WaitTillTimeout (uint8_t timeout);
 static void I2C_SetCtrlBits(void);
 static void I2C_StopTransmission(void);
-volatile static I2C_Handle_t *I2C_handle_p;		// static pointer to the struct that's only used by the i2c driver
+volatile static I2C_Handle_t *I2C_handle_p;		// static pointer to the struct that's only used by the I2C driver
+// **********************************************************************************************
+
+/* Function definitions -----------------------------------------------------*/
 
 /*
- * @I2C_PeripheralClkControl: Enables the peripheral clock for a respective I2C
+ * @I2C_PeripheralClkControl: Enables the peripheral clock for a respective I2C interface
  */
 void I2C_PeripheralClkControl(I2C_TypeDef *pI2Cx) {
 	if (pI2Cx == I2C1) {
@@ -68,7 +69,9 @@ void I2C_Init(I2C_Handle_t *I2C_handle) {
 
 uint8_t GetFlagStatus(I2C_TypeDef *pI2Cx, uint16_t flag) {
 	if (pI2Cx->SR1 & flag)
+	{
 		return FLAG_SET;
+	}
 	return FLAG_NOT_SET;
 }
 
@@ -86,7 +89,6 @@ static void GenerateStopCondition(volatile I2C_Handle_t *I2C_handle) {
  */
 static void I2C_WriteSlaveAddress(volatile I2C_Handle_t *I2C_handle, uint8_t operation) {
 //	printf ("Writing slave address: %d\n", I2C_handle->I2C_Config.I2C_DeviceAddress);
-
 	uint8_t slaveAddress = I2C_handle->I2C_Config.I2C_DeviceAddress;
 	slaveAddress <<= 1;
 	slaveAddress = operation == WRITE ? (slaveAddress & ~1) : (slaveAddress | 1);
@@ -129,7 +131,7 @@ static void I2C_ControlAcking(I2C_TypeDef *pI2Cx, uint8_t enable)
 	}
 }
 
-void setRef(I2C_Handle_t *I2C_handle) 		// todo
+void setRef(I2C_Handle_t *I2C_handle) 		// todo - maybe come up with something better to set static pointer?
 {
 	I2C_handle_p = I2C_handle;
 }
@@ -167,7 +169,7 @@ void I2C1_EV_IRQHandler (void)
 
 	uint8_t eventInterrupt = (I2C_handle_p->pI2Cx->CR2 & I2C_CR2_ITEVTEN) >> I2C_CR2_ITEVTEN_Pos;
 	uint8_t bufferInterrupt = (I2C_handle_p->pI2Cx->CR2 & I2C_CR2_ITBUFEN) >> I2C_CR2_ITBUFEN_Pos;
-	uint8_t temp;
+	uint8_t temp;			// stores register values
 
 	if (eventInterrupt)
 	{
@@ -177,7 +179,6 @@ void I2C1_EV_IRQHandler (void)
 		{
 			if (I2C_handle_p->I2C_State == I2C_TX_BUSY)
 			{
-				//printf ("Writing slave address: %d\n", I2C_handle_p->I2C_Config.I2C_DeviceAddress);
 				I2C_WriteSlaveAddress(I2C_handle_p, WRITE);		// write slave address along with write bit
 			}
 			else if (I2C_handle_p->I2C_State == I2C_RX_BUSY)
@@ -217,9 +218,9 @@ void I2C1_EV_IRQHandler (void)
 		temp = (I2C_handle_p->pI2Cx->SR1 & I2C_SR1_BTF) >> I2C_SR1_BTF_Pos;
 		if (temp)
 		{
-			if (I2C_handle_p->I2C_State == I2C_TX_BUSY)
+			if (I2C_handle_p->I2C_State == I2C_TX_BUSY)					// TXE=1, BTF=1
 			{
-				if (!I2C_handle_p->txBufferLength)
+				if (!I2C_handle_p->txBufferLength)						// if there are no more TX bytes to be sent
 				{
 					GenerateStopCondition(I2C_handle_p);
 					I2C_StopTransmission();
@@ -231,10 +232,10 @@ void I2C1_EV_IRQHandler (void)
 				{
 					GenerateStopCondition(I2C_handle_p);
 
-					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
+					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR; // read second last byte
 					I2C_handle_p->rxBufferLength--;
 
-					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
+					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR; // read last byte
 					I2C_handle_p->rxBufferLength--;
 
 					I2C_StopTransmission();
@@ -244,6 +245,9 @@ void I2C1_EV_IRQHandler (void)
 	}
 }
 
+/*
+ * @I2C_HandleInterruptEvents: Called upon getting an error interrupt - resets the bit and generate stop condition
+ */
 void I2C_HandleInterruptEvents (uint16_t errorRegister, I2C_ErrorEvents errorEvent)
 {
 	I2C_handle_p->pI2Cx->SR1 &= ~(errorRegister);
@@ -257,7 +261,7 @@ void I2C_HandleInterruptEvents (uint16_t errorRegister, I2C_ErrorEvents errorEve
 }
 
 /*
- * I2C1_ER_IRQHandler: Interrupt handler for I2C errors
+ * @I2C1_ER_IRQHandler: Interrupt handler for I2C errors
  */
 void I2C1_ER_IRQHandler(void)
 {
@@ -290,7 +294,6 @@ void I2C1_ER_IRQHandler(void)
 	}
 }
 
-
 /*
  * @I2C_TXE_Interrupt: Writes the respective byte to the DR
  * data register = empty = TXE
@@ -306,48 +309,46 @@ void I2C_TXE_Interrupt (void)
 }
 
 
-void I2C_RXNE_Interrupt()
-{
-	if (I2C_handle_p->rxBufferLength > 0)
-	{
-		I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
-		I2C_handle_p->rxBufferLength--;
-	}
+//void I2C_RXNE_Interrupt() {
+	//	if (I2C_handle_p->rxBufferLength > 0)
+	//	{
+	//		I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
+	//		I2C_handle_p->rxBufferLength--;
+	//	}
 
-//	if (!I2C_handle_p->rxBufferLength)				   // no more bytes to read
-//	{
-//		GenerateStopCondition(I2C_handle_p);
-//		I2C_StopTransmission();
-//	}
-
+	//	if (!I2C_handle_p->rxBufferLength)				   // no more bytes to read
+	//	{
+	//		GenerateStopCondition(I2C_handle_p);
+	//		I2C_StopTransmission();
+	//	}
 
 
-//	// handle RXing
-//	if (I2C_handle_p->rxBufferLength)
-//	{
-//		if (I2C_handle_p->rxBufferLength == 2)
-//		{
-//			I2C_ControlAcking(I2C_handle_p->pI2Cx, RESET);		// Enable NACK for the last byte to be RX'd
-//			I2C_handle_p->pI2Cx->CR1 |= 1 << I2C_CR1_POS_Pos;
-//		}
-//		I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
-////		*I2C_handle_p->pRxBuffer++ = I2C_handle_p->pI2Cx->DR;
-//		I2C_handle_p->rxBufferLength--;
-//	}
-//
-//	if (!I2C_handle_p->rxBufferLength)						// no more bytes to read
-//	{
-//		GenerateStopCondition(I2C_handle_p);
-//		I2C_StopTransmission();
-//	}
 
-}
+	//	// handle RXing
+	//	if (I2C_handle_p->rxBufferLength)
+	//	{
+	//		if (I2C_handle_p->rxBufferLength == 2)
+	//		{
+	//			I2C_ControlAcking(I2C_handle_p->pI2Cx, RESET);		// Enable NACK for the last byte to be RX'd
+	//			I2C_handle_p->pI2Cx->CR1 |= 1 << I2C_CR1_POS_Pos;
+	//		}
+	//		I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR;
+	////		*I2C_handle_p->pRxBuffer++ = I2C_handle_p->pI2Cx->DR;
+	//		I2C_handle_p->rxBufferLength--;
+	//	}
+	//
+	//	if (!I2C_handle_p->rxBufferLength)						// no more bytes to read
+	//	{
+	//		GenerateStopCondition(I2C_handle_p);
+	//		I2C_StopTransmission();
+	//	}
+
+//}
 
 
 /*
  * HAL_I2C_Master_Transmit: polling approach for TXing bytes to the slave
  */
-
 HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *data, uint8_t size)
 {
 	// generate start condition
@@ -365,11 +366,7 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *da
 	// clear address flag
 	I2C_ClearADDRFlag(I2C_handle->pI2Cx);
 
-	/* write to the SDA line */
-
-	// wait for TXE bit to set
-//	while(!GetFlagStatus(I2C_handle->pI2Cx, I2C_SR1_TXE) && WaitTillTimeout(5)); // todo remove!
-
+	// write to the SDA line
 	for (; size > 0; size--)
 	{
 		// making sure data register is empty prior to writing to it
@@ -385,6 +382,9 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *da
 	return HAL_OK;
 }
 
+/*
+ * @HAL_I2C_Master_Receive: Polling approach for RXing bytes from slave
+ */
 void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_t size, uint8_t startIndex)
 {
 	// generate start condition
@@ -497,6 +497,9 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 	}
 }
 
+/*
+ * @I2C_StopTransmission: Disables I2C control bits and sets I2C struct to initial values
+ */
 static void I2C_StopTransmission(void)
 {
 	printf ("Stopping transmission...\n\n");
@@ -510,6 +513,9 @@ static void I2C_StopTransmission(void)
 	I2C_handle_p->rxBufferLength = BYTES_PER_TRANSACTION;
 }
 
+/*
+ * @I2C_SetCtrlBits: Sets I2C control bits
+ */
 static void I2C_SetCtrlBits(void)
 {
 	I2C_handle_p->pI2Cx->CR2 |= I2C_CR2_ITBUFEN;

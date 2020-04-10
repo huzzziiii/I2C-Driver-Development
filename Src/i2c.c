@@ -2,7 +2,7 @@
 #include <i2c.h>
 
 /*
- * @ProcessData: Convert raw bytes into readable data
+ * @ProcessData: Converts raw bytes into readable data
  */
 void ProcessData (uint8_t *rxBuffer, uint8_t startIndex) {
 	printf ("\nUpper byte: %d, Lower byte: %d\n", rxBuffer[startIndex], rxBuffer[startIndex+1]);
@@ -25,11 +25,11 @@ void ProcessData (uint8_t *rxBuffer, uint8_t startIndex) {
 }
 
 /*
- * @ReadTemperatureInterrupt: Read temperature values via I2C using interrupts
+ * @ReadTemperatureInterrupt: Reads temperature values via I2C using interrupts
  */
 void ReadTemperatureInterrupt(I2C_Handle_t *I2C_handle)
 {
-	setRef(I2C_handle);   // todo
+	setRef(I2C_handle);   // todo - sets the static pointer in HAL file to I2C_handle
 
 	// Start I2C transaction
 	while (HAL_I2C_StartInterrupt(I2C_TX_BUSY) != I2C_READY);
@@ -58,6 +58,7 @@ void ReadTemperatureInterrupt(I2C_Handle_t *I2C_handle)
  */
 void ReadTemperature(I2C_Handle_t *I2C_handle, const uint8_t bytesToRead)
 {
+	// todo - maybe use the following data straight from I2C_handle
 	uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
 	uint8_t rxBuffer[bytesToRead];
 	uint8_t startRxIndex = 0;

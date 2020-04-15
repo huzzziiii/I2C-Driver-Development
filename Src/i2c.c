@@ -29,8 +29,6 @@ void ProcessData (uint8_t *rxBuffer, uint8_t startIndex) {
  */
 void ReadTemperatureInterrupt(I2C_Handle_t *I2C_handle)
 {
-	setRef(I2C_handle);   // todo - sets the static pointer in HAL file to I2C_handle
-
 	// Start I2C transaction
 	while (HAL_I2C_StartInterrupt(I2C_TX_BUSY) != I2C_READY);
 

@@ -31,7 +31,6 @@ I2C_Handle_t I2C1_handle;
  */
 void I2C_Initilization()
 {
-//	I2C_Handle_t I2C1_handle;
 	I2C1_handle.pI2Cx = I2C1;
 	I2C1_handle.I2C_Config.I2C_AckControl = I2C_ACK_ENABLE;
 	I2C1_handle.I2C_Config.I2C_SCLSpeed = I2C_SCL_SPEED_SM;
@@ -48,7 +47,7 @@ void GetTemperature(uint8_t interrupt)
 	I2C1_handle.txBufferLength = txSize;
 	I2C1_handle.pRxBuffer = rxBuffer;
 	I2C1_handle.rxStartIndex = 0;
-	I2C1_handle.rxBufferLength = BYTES_PER_TRANSACTION;		// todo - maybe remove rxBufferSize
+	I2C1_handle.rxBufferLength = BYTES_PER_TRANSACTION;
 	I2C1_handle.rxBufferSize = bytesToRead;
 
 	if (interrupt == SET)

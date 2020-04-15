@@ -48,7 +48,7 @@ typedef struct {
 HAL_StatusTypeDef WaitTillTimeout (uint8_t timeout);
 void I2C_PeripheralClkControl(I2C_TypeDef *pI2Cx);
 void I2C_Init(I2C_Handle_t *I2C_handle);
-//void GenerateStartCondition(I2C_Handle_t *I2C_handle);
+//void I2C_GenerateStartCondition(I2C_Handle_t *I2C_handle);
 void I2C_MasterSendData(I2C_Handle_t *I2C_handle);
 HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *data, uint8_t size);
 void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_t size, uint8_t startIndex);

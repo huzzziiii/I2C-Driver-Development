@@ -1,6 +1,5 @@
 
-#include <i2c.h>
-
+#include <mcp9808.h>
 /*
  * @ProcessData: Converts raw bytes into readable data
  */

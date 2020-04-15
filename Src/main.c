@@ -11,11 +11,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "i2c.h"
+#include "mcp9808.h"
 //
 static uint8_t txBuffer[1] = {MCP9808_REG_AMBIENT_TEMP_REG};
-//static const uint8_t bytesToRead = 4;
-#define bytesToRead 6
+#define bytesToRead 6		// 3 data samples
 static uint8_t rxBuffer[bytesToRead];
 static uint8_t txSize = sizeof(txBuffer)/sizeof(txBuffer[0]);
 

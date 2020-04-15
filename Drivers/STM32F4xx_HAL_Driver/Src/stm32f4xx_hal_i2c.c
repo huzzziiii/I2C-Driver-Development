@@ -4,13 +4,15 @@
 #include "stm32f4xx_hal_i2c.h"
 
 /* Private function prototypes -----------------------------------------------*/
+static void I2C_GenerateStartCondition(volatile I2C_Handle_t *I2C_handle);
+static void I2C_GenerateStopCondition(volatile I2C_Handle_t *I2C_handle);
 static void I2C_ClearADDRFlag(I2C_TypeDef *pI2Cx);
 static void I2C_WriteSlaveAddress(volatile I2C_Handle_t *I2C_handle, uint8_t operation);
 static void I2C_ControlAcking(I2C_TypeDef *pI2Cx, uint8_t enable);
 //static HAL_StatusTypeDef WaitTillTimeout (uint8_t timeout);
 static void I2C_SetCtrlBits(void);
 static void I2C_StopTransmission(void);
-static void WaitForCompletion(I2C_TypeDef *pI2Cx, uint16_t i2cRegister);
+static void I2C_WaitForCompletion(I2C_TypeDef *pI2Cx, uint16_t i2cRegister);
 volatile static I2C_Handle_t *I2C_handle_p = NULL;		// static pointer to the struct that's only used by the I2C driver
 // **********************************************************************************************
 
@@ -79,16 +81,16 @@ uint8_t GetFlagStatus(I2C_TypeDef *pI2Cx, uint16_t flag) {
 	return FLAG_NOT_SET;
 }
 
-void GenerateStartCondition(volatile I2C_Handle_t *I2C_handle) {
+void I2C_GenerateStartCondition(volatile I2C_Handle_t *I2C_handle) {
 	I2C_handle->pI2Cx->CR1 |= I2C_CR1_START;
 }
 
-static void GenerateStopCondition(volatile I2C_Handle_t *I2C_handle) {
+static void I2C_GenerateStopCondition(volatile I2C_Handle_t *I2C_handle) {
 //	printf ("STOP condition...\n");
 	I2C_handle->pI2Cx->CR1 |= I2C_CR1_STOP;
 }
 
-static void WaitForCompletion(I2C_TypeDef *pI2Cx, uint16_t i2cRegister)
+static void I2C_WaitForCompletion(I2C_TypeDef *pI2Cx, uint16_t i2cRegister)
 {
 	while (!GetFlagStatus(pI2Cx, i2cRegister) && WaitTillTimeout(5));
 }
@@ -155,7 +157,7 @@ I2C_State HAL_I2C_StartInterrupt(I2C_State expectedState)
 		// set transaction state
 		I2C_handle_p->I2C_State = expectedState;
 
-		GenerateStartCondition(I2C_handle_p);
+		I2C_GenerateStartCondition(I2C_handle_p);
 
 		// enable i2c control bits
 		I2C_SetCtrlBits();
@@ -224,7 +226,7 @@ void I2C1_EV_IRQHandler (void)
 			{
 				if (!I2C_handle_p->txBufferLength)						// if there are no more TX bytes to be sent
 				{
-					GenerateStopCondition(I2C_handle_p);
+					I2C_GenerateStopCondition(I2C_handle_p);
 					I2C_StopTransmission();
 				}
 			}
@@ -232,7 +234,7 @@ void I2C1_EV_IRQHandler (void)
 			{
 				if (I2C_handle_p->rxBufferLength == 2)
 				{
-					GenerateStopCondition(I2C_handle_p);
+					I2C_GenerateStopCondition(I2C_handle_p);
 
 					I2C_handle_p->pRxBuffer[I2C_handle_p->rxStartIndex++] = (uint8_t) I2C_handle_p->pI2Cx->DR; // read second last byte
 					I2C_handle_p->rxBufferLength--;
@@ -258,7 +260,7 @@ void I2C_HandleInterruptEvents (uint16_t errorRegister, I2C_ErrorEvents errorEve
 	{
 		printf ("Received ACK failure...\n");
 		I2C_StopTransmission();
-		GenerateStopCondition(I2C_handle_p);
+		I2C_GenerateStopCondition(I2C_handle_p);
 	}
 }
 
@@ -320,7 +322,7 @@ void I2C_TXE_Interrupt (void)
 
 	//	if (!I2C_handle_p->rxBufferLength)				   // no more bytes to read
 	//	{
-	//		GenerateStopCondition(I2C_handle_p);
+	//		I2C_GenerateStopCondition(I2C_handle_p);
 	//		I2C_StopTransmission();
 	//	}
 
@@ -341,7 +343,7 @@ void I2C_TXE_Interrupt (void)
 	//
 	//	if (!I2C_handle_p->rxBufferLength)						// no more bytes to read
 	//	{
-	//		GenerateStopCondition(I2C_handle_p);
+	//		I2C_GenerateStopCondition(I2C_handle_p);
 	//		I2C_StopTransmission();
 	//	}
 
@@ -354,16 +356,16 @@ void I2C_TXE_Interrupt (void)
 HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *data, uint8_t size)
 {
 	// generate start condition
-	GenerateStartCondition(I2C_handle);
+	I2C_GenerateStartCondition(I2C_handle);
 
 	// validate the completion of start condition
-	WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_SB);
+	I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_SB);
 
 	// write slave address along with write bit
 	I2C_WriteSlaveAddress(I2C_handle, WRITE);
 
 	// wait for address to be sent
-	WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_ADDR);
+	I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_ADDR);
 
 	// clear address flag
 	I2C_ClearADDRFlag(I2C_handle->pI2Cx);
@@ -372,13 +374,13 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *da
 	for (; size > 0; size--)
 	{
 		// making sure data register is empty prior to writing to it
-		WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_TXE);
+		I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_TXE);
 
 		I2C_handle->pI2Cx->DR = *data++;
 
-		WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
+		I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
 	}
-	GenerateStopCondition(I2C_handle);
+	I2C_GenerateStopCondition(I2C_handle);
 
 	return HAL_OK;
 }
@@ -389,22 +391,22 @@ HAL_StatusTypeDef HAL_I2C_Master_Transmit (I2C_Handle_t *I2C_handle, uint8_t *da
 void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_t size, uint8_t startIndex)
 {
 	// generate start condition
-	GenerateStartCondition(I2C_handle);
+	I2C_GenerateStartCondition(I2C_handle);
 
 	// validate the completion of start condition
-	WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_SB);
+	I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_SB);
 
 	// write slave address
 	I2C_WriteSlaveAddress(I2C_handle, READ);
 
 	// wait for address to be sent
-	WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_ADDR);
+	I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_ADDR);
 
 	switch (size) {
 		case 1:
 			I2C_ControlAcking(I2C_handle->pI2Cx, RESET);	// disable ACK
 			I2C_ClearADDRFlag(I2C_handle->pI2Cx);			// clear ADDR flag
-			GenerateStopCondition(I2C_handle);				// generate STOP condition
+			I2C_GenerateStopCondition(I2C_handle);				// generate STOP condition
 			break;
 
 		case 2:
@@ -429,10 +431,10 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 					I2C_ClearADDRFlag(I2C_handle->pI2Cx);
 
 					// wait till RXNE = 1 (Data is sent from SR to DR)
-					WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_RXNE);
+					I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_RXNE);
 
 					// generate stop
-					GenerateStopCondition(I2C_handle);
+					I2C_GenerateStopCondition(I2C_handle);
 
 					// read data
 					rxBuffer[startIndex++] = I2C_handle->pI2Cx->DR;
@@ -441,9 +443,9 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 
 			else if (size == 2) {
 				// wait till BTF is set (last byte is received) - shift reg=1, DR=1
-				WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
+				I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
 
-				GenerateStopCondition(I2C_handle);
+				I2C_GenerateStopCondition(I2C_handle);
 				printf ("Start_index: %d\n", startIndex);
 
 				rxBuffer[startIndex++] = (uint8_t) I2C_handle->pI2Cx->DR;
@@ -454,7 +456,7 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 			}
 			else if (size == 3) {
 				// wait for the second last byte to be put in SR while DR is full (RxNE=1)
-				WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
+				I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
 
 				// disable ACK so NACK is sent upon reception of the last byte
 				I2C_ControlAcking(I2C_handle->pI2Cx, DISABLE);
@@ -466,9 +468,9 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 				size--;
 
 				// wait for the last byte to be put in SR while DR is full (RxNE=1)
-				WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
+				I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_BTF);
 
-				GenerateStopCondition(I2C_handle);
+				I2C_GenerateStopCondition(I2C_handle);
 
 				// read the second byte
 				*rxBuffer = (uint8_t) I2C_handle->pI2Cx->DR;
@@ -486,7 +488,7 @@ void HAL_I2C_Master_Receive (I2C_Handle_t *I2C_handle, uint8_t *rxBuffer, uint8_
 		}
 		// > 3 bytes
 		else {
-			WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_RXNE);
+			I2C_WaitForCompletion(I2C_handle->pI2Cx, I2C_SR1_RXNE);
 
 			// reading the byte
 			*rxBuffer = (uint8_t) I2C_handle->pI2Cx->DR;
